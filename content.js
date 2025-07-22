@@ -7,27 +7,16 @@ function createSuggestionBox() {
   const shadow = container.attachShadow({ mode: "open" });
   const box = document.createElement("div");
   box.id = "promptpilot-box";
-  box.style.display = "none"; // Hidden by default
-  box.style.opacity = "0"; // For fade effect
-  box.style.transition = "opacity 0.3s ease"; // Smooth fade
+  box.style.display = "none";
+  box.style.opacity = "0";
+  box.style.transition = "opacity 0.3s ease";
 
-  // Toggle button
   const toggle = document.createElement("div");
   toggle.id = "promptpilot-toggle";
   toggle.textContent = "✨";
-  toggle.style.position = "fixed";
-  toggle.style.bottom = "20px";
-  toggle.style.right = "20px";
-  toggle.style.padding = "8px";
-  toggle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
-  toggle.style.color = "white";
-  toggle.style.borderRadius = "50%";
-  toggle.style.cursor = "pointer";
-  toggle.style.zIndex = "99998";
-  toggle.style.display = "none"; // Hidden until needed
+  toggle.style.cssText = "position:fixed;bottom:20px;right:20px;padding:8px;background-color:rgba(0,0,0,0.7);color:white;border-radius:50%;cursor:pointer;z-index:99998;display:none;";
   document.body.appendChild(toggle);
 
-  // Initial styling (updated for subtlety)
   Object.assign(box.style, {
     position: "fixed",
     bottom: "80px",
@@ -47,7 +36,6 @@ function createSuggestionBox() {
     color: "#333"
   });
 
-  // Theme awareness
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   if (isDarkMode) {
     box.style.backgroundColor = "rgba(30, 30, 30, 0.9)";
@@ -55,14 +43,9 @@ function createSuggestionBox() {
     box.style.borderColor = "#555";
   }
 
-  // Close button
   const closeBtn = document.createElement("span");
   closeBtn.textContent = "×";
-  closeBtn.style.position = "absolute";
-  closeBtn.style.top = "5px";
-  closeBtn.style.right = "5px";
-  closeBtn.style.cursor = "pointer";
-  closeBtn.style.fontSize = "16px";
+  closeBtn.style.cssText = "position:absolute;top:5px;right:5px;cursor:pointer;font-size:16px;";
   closeBtn.onclick = () => {
     box.style.display = "none";
     toggle.style.display = "block";
@@ -71,7 +54,6 @@ function createSuggestionBox() {
   box.appendChild(closeBtn);
   shadow.appendChild(box);
   document.body.appendChild(container);
-
   console.log("✅ Suggestion box and toggle created");
   return { box, toggle };
 }
@@ -80,19 +62,18 @@ function sendUsageData(input, suggestion) {
   const usageData = {
     sessionId: crypto.randomUUID(),
     inputLength: input.length,
-    suggestionUsed: suggestion.substring(0, 50), // Truncate to avoid PII
+    suggestionUsed: suggestion.substring(0, 50),
     timestamp: new Date().toISOString(),
     userAction: "suggestion_click"
   };
-  fetch('https://your-heroku-app.herokuapp.com/usage', { // Replace with your Heroku app URL
+  fetch('https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/usage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(usageData)
-  }).catch(err => console.error("Usage data send failed:", err));
+  }).catch(err => console.error("❌ Usage data send failed:", err));
 }
 
-function updateSuggestions(prompt, box, toggle, textarea) {
-  const inputText = textarea.value || textarea.textContent || "";
+function updateSuggestions(inputText, box, toggle, textarea) {
   console.log("🔍 Input text:", inputText, "Length:", inputText.length);
   if (!inputText) {
     box.style.display = "none";
@@ -113,42 +94,29 @@ function updateSuggestions(prompt, box, toggle, textarea) {
     (response) => {
       if (chrome.runtime.lastError) {
         console.error("❌ Error communicating with background script:", chrome.runtime.lastError);
-        const fallbackSuggestions = [
+        renderSuggestions([
           `Act as an expert: ${inputText}`,
-          `Explain in simple terms: ${inputText}`,
-          `Give step-by-step guidance for: ${inputText}`
-        ];
-        renderSuggestions(fallbackSuggestions, box, textarea);
+          `Explain simply: ${inputText}`,
+          `Step-by-step: ${inputText}`
+        ], box, textarea, inputText);
         return;
       }
       if (response.error) {
         console.error("❌ API error:", response.error);
-        const fallbackSuggestions = [
+        renderSuggestions([
           `Act as an expert: ${inputText}`,
-          `Explain in simple terms: ${inputText}`,
-          `Give step-by-step guidance for: ${inputText}`
-        ];
-        renderSuggestions(fallbackSuggestions, box, textarea);
+          `Explain simply: ${inputText}`,
+          `Step-by-step: ${inputText}`
+        ], box, textarea, inputText);
       } else {
         console.log("📌 Received AI suggestions:", response.suggestions);
-        try {
-          const suggestions = Array.isArray(response.suggestions) ? response.suggestions : JSON.parse(response.suggestions);
-          renderSuggestions(suggestions, box, textarea);
-        } catch (e) {
-          console.error("❌ Failed to parse suggestions:", e);
-          const fallbackSuggestions = [
-            `Act as an expert: ${inputText}`,
-            `Explain in simple terms: ${inputText}`,
-            `Give step-by-step guidance for: ${inputText}`
-          ];
-          renderSuggestions(fallbackSuggestions, box, textarea);
-        }
+        renderSuggestions(response.suggestions, box, textarea, inputText);
       }
     }
   );
 }
 
-function renderSuggestions(suggestions, box, textarea) {
+function renderSuggestions(suggestions, box, textarea, inputText) {
   box.innerHTML = "<strong>✨ PromptPilot Suggestions:</strong><br><br>";
   suggestions.forEach((text) => {
     const s = document.createElement("div");
@@ -174,13 +142,13 @@ function renderSuggestions(suggestions, box, textarea) {
     });
     const copyBtn = document.createElement("span");
     copyBtn.textContent = "📋";
-    copyBtn.style.marginLeft = "5px";
-    copyBtn.style.cursor = "pointer";
+    copyBtn.style.cssText = "margin-left:5px;cursor:pointer;";
     copyBtn.onclick = (e) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(text);
-      copyBtn.textContent = "Copied!";
-      setTimeout(() => copyBtn.textContent = "📋", 1000);
+      navigator.clipboard.writeText(text).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "📋", 1000);
+      });
     };
     s.appendChild(copyBtn);
     box.appendChild(s);
@@ -231,7 +199,7 @@ function setupPromptPilot(textarea) {
         box.style.display = isBoxVisible ? "block" : "none";
         box.style.opacity = isBoxVisible ? "1" : "0";
         toggle.style.display = isBoxVisible ? "none" : "block";
-        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
+        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display);
       };
     }
     if (!document.getElementById("promptpilot-toggle")) {
