@@ -75,7 +75,7 @@ function sendUsageData(input, suggestion) {
 
 function updateSuggestions(inputText, box, toggle, textarea) {
   console.log("🔍 Input text:", inputText, "Length:", inputText.length);
-  if (!inputText) {
+  if (!inputText.trim()) {
     box.style.display = "none";
     toggle.style.display = "none";
     return;
@@ -157,12 +157,12 @@ function renderSuggestions(suggestions, box, textarea, inputText) {
 
 function initialize() {
   console.log("🔍 Searching for input element on", window.location.href);
-  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"]');
+  const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
   console.log("🔎 Initial element check:", textarea);
   if (!textarea || !textarea.offsetParent) {
     console.log("⏳ No visible input found, observing DOM...");
     const observer = new MutationObserver((mutations) => {
-      const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"]');
+      const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
       console.log("🔎 Observed element:", textarea);
       if (textarea && textarea.offsetParent) {
         console.log("✅ Found visible input:", textarea);
@@ -186,7 +186,7 @@ function setupPromptPilot(textarea) {
     const userPrompt = textarea.value || textarea.textContent || "";
     console.log("⌨️ User input changed:", userPrompt);
     updateSuggestions(userPrompt, box, toggle, textarea);
-    if (userPrompt && !document.getElementById("promptpilot-toggle")) {
+    if (userPrompt.trim() && !document.getElementById("promptpilot-toggle")) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
     }
