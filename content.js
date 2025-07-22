@@ -9,7 +9,7 @@ function createSuggestionBox() {
   box.id = "promptpilot-box";
   box.style.display = "none";
   box.style.opacity = "0";
-  box.style.transition = "opacity 0.3s ease";
+  box.style.transition = "opacity 0.3s ease, height 0.3s ease";
 
   const toggle = document.createElement("div");
   toggle.id = "promptpilot-toggle";
@@ -43,6 +43,13 @@ function createSuggestionBox() {
     box.style.borderColor = "#555";
   }
 
+  // Minimize button
+  const minimizeBtn = document.createElement("span");
+  minimizeBtn.textContent = "−";
+  minimizeBtn.style.cssText = "position:absolute;top:5px;left:5px;cursor:pointer;font-size:16px;";
+  minimizeBtn.onclick = () => toggleMinimize();
+
+  // Close button
   const closeBtn = document.createElement("span");
   closeBtn.textContent = "×";
   closeBtn.style.cssText = "position:absolute;top:5px;right:5px;cursor:pointer;font-size:16px;";
@@ -51,11 +58,20 @@ function createSuggestionBox() {
     toggle.style.display = "block";
   };
 
+  box.appendChild(minimizeBtn);
   box.appendChild(closeBtn);
   shadow.appendChild(box);
   document.body.appendChild(container);
   console.log("✅ Suggestion box and toggle created");
   return { box, toggle };
+
+  function toggleMinimize() {
+    const isMinimized = box.style.height === "30px" || box.style.height === "";
+    box.style.height = isMinimized ? "200px" : "30px";
+    box.style.overflowY = isMinimized ? "auto" : "hidden";
+    minimizeBtn.textContent = isMinimized ? "−" : "+";
+    if (!isMinimized) box.innerHTML = "<strong>✨ PromptPilot</strong><br>"; // Title bar when minimized
+  }
 }
 
 function sendUsageData(input, suggestion) {
@@ -87,6 +103,7 @@ function updateSuggestions(inputText, box, toggle, textarea) {
   }
   box.style.display = "block";
   box.style.opacity = "0";
+  box.style.height = "200px"; // Reset height on new input
   setTimeout(() => box.style.opacity = "1", 10);
 
   chrome.runtime.sendMessage(
