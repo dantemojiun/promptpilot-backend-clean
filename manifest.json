@@ -6,12 +6,13 @@
   "permissions": [
     "background",
     "storage",
-    "scripting"
+    "scripting",
+    "activeTab"
   ],
   "host_permissions": [
     "<all_urls>",
     "https://api.openai.com/*",
-    "https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/*" // Replace with your Heroku app URL
+    "https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/*"
   ],
   "content_scripts": [
     {
