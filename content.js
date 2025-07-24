@@ -24,10 +24,10 @@ function createSuggestionBox() {
   toggle.style.borderRadius = "50%";
   toggle.style.cursor = "pointer";
   toggle.style.zIndex = "99998";
-  toggle.style.display = "none"; // Hidden until needed
+  toggle.style.display = "block"; // Ensure toggle is visible by default
   document.body.appendChild(toggle);
 
-  // Initial styling (updated for subtlety)
+  // Initial styling
   Object.assign(box.style, {
     position: "fixed",
     bottom: "80px",
@@ -66,11 +66,10 @@ function createSuggestionBox() {
     box.style.display = "none";
     toggle.style.display = "block";
   };
-
   box.appendChild(closeBtn);
+
   shadow.appendChild(box);
   document.body.appendChild(container);
-
   console.log("✅ Suggestion box and toggle created");
   return { box, toggle };
 }
@@ -91,18 +90,13 @@ function sendUsageData(input, suggestion) {
 }
 
 function updateSuggestions(inputText, box, toggle, textarea) {
-  const inputText = textarea.value || textarea.textContent || "";
-  console.log("🔍 Input text:", inputText, "Length:", inputText.length);
+  console.log("🔍 Updating suggestions for input:", inputText);
   if (!inputText) {
     box.style.display = "none";
-    toggle.style.display = "none";
+    toggle.style.display = "block"; // Ensure toggle is visible when input is empty
     return;
   }
 
-  if (!document.getElementById("promptpilot-toggle")) {
-    document.body.appendChild(toggle);
-    toggle.style.display = "block";
-  }
   box.style.display = "block";
   box.style.opacity = "0";
   setTimeout(() => box.style.opacity = "1", 10);
@@ -112,12 +106,12 @@ function updateSuggestions(inputText, box, toggle, textarea) {
     (response) => {
       if (chrome.runtime.lastError) {
         console.error("❌ Error communicating with background script:", chrome.runtime.lastError);
-        renderSuggestions(["Find", "Buy", "Explain"], box, textarea, inputText);
+        renderSuggestions(["Find", "Buy", "Repair"], box, textarea, inputText);
         return;
       }
       if (response.error) {
         console.error("❌ API error:", response.error);
-        renderSuggestions(["Find", "Buy", "Explain"], box, textarea, inputText);
+        renderSuggestions(["Find", "Buy", "Repair"], box, textarea, inputText);
       } else {
         console.log("📌 Received AI intents:", response.intents);
         renderSuggestions(response.intents, box, textarea, inputText);
@@ -129,26 +123,153 @@ function updateSuggestions(inputText, box, toggle, textarea) {
 function renderSuggestions(intents, box, textarea, inputText) {
   box.innerHTML = "<strong>✨ Suggested Intents:</strong><br><br>";
   intents.forEach((context) => {
-    const b = document.createElement("div");
-    b.textContent = context;
-    Object.assign(b.style, {
+    const button = document.createElement("div");
+    button.textContent = context;
+    Object.assign(button.style, {
       padding: "8px",
-      marginBottom: "8px",
+      marginBottom: "4px",
       backgroundColor: "rgba(240, 240, 240, 0.8)",
       borderRadius: "6px",
       cursor: "pointer",
       display: "block"
     });
     const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (isDarkMode) b.style.backgroundColor = "rgba(50, 50, 50, 0.8)";
-    b.addEventListener("click", () => {
-      const sentence = constructSentence(inputText, context);
-      textarea.value = sentence;
-      textarea.focus();
-      sendUsageData(sentence, context);
+    if (isDarkMode) button.style.backgroundColor = "rgba(50, 50, 50, 0.8)";
+
+    let suggestionsBox = document.createElement("div");
+    suggestionsBox.id = `suggestions-${context.replace(/\s+/g, '-')}`; // Sanitize ID
+    suggestionsBox.style.marginTop = "4px";
+    suggestionsBox.style.display = "none";
+
+    button.addEventListener("click", () => {
+      const existingSuggestions = document.getElementById(`suggestions-${context.replace(/\s+/g, '-')}`);
+      if (existingSuggestions && existingSuggestions.parentNode === box) {
+        console.log("📌 Toggling existing suggestions for:", context, "Current display:", existingSuggestions.style.display);
+        existingSuggestions.style.display = existingSuggestions.style.display === "none" ? "block" : "none"; // Toggle visibility
+      } else {
+        console.log("📌 Generating new suggestions for:", context);
+        chrome.runtime.sendMessage(
+          { action: "generateSentences", keywords: inputText, intent: context },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.error("❌ Error generating sentences:", chrome.runtime.lastError);
+              const fallback = getContextSpecificSentences(inputText, context, true);
+              renderSentenceSuggestions(fallback, suggestionsBox, textarea, context);
+            } else if (response.error) {
+              console.error("❌ API error for sentences:", response.error);
+              const fallback = getContextSpecificSentences(inputText, context, true);
+              renderSentenceSuggestions(fallback, suggestionsBox, textarea, context);
+            } else {
+              console.log("📝 Received AI sentences:", response.sentences);
+              renderSentenceSuggestions(response.sentences, suggestionsBox, textarea, context);
+            }
+            if (box.contains(suggestionsBox)) {
+              box.removeChild(suggestionsBox); // Remove if already present to avoid duplication
+            }
+            box.insertBefore(suggestionsBox, button.nextSibling); // Insert below the button
+            suggestionsBox.style.display = "block";
+          }
+        );
+      }
     });
-    box.appendChild(b);
+
+    box.appendChild(button);
+    if (suggestionsBox.children.length > 0 && !box.contains(suggestionsBox)) box.insertBefore(suggestionsBox, button.nextSibling); // Ensure initial placement
   });
+}
+
+function renderSentenceSuggestions(sentences, suggestionsBox, textarea, context) {
+  suggestionsBox.innerHTML = ""; // Clear previous suggestions
+  sentences.forEach((sentence, index) => {
+    const suggestion = document.createElement("div");
+    suggestion.textContent = `${index + 1}. ${sentence}`;
+    suggestion.style.cssText = "margin-left:20px;padding:2px 6px;background:rgba(220,240,255,0.5);border-radius:4px;cursor:pointer;font-size:11px;";
+    suggestion.onmouseover = () => suggestion.style.background = "rgba(200,230,255,0.7)";
+    suggestion.onmouseout = () => suggestion.style.background = "rgba(220,240,255,0.5)";
+    suggestion.onclick = (e) => {
+      e.stopPropagation();
+      if (textarea.isContentEditable) {
+        textarea.innerText = sentence;
+        const range = document.createRange();
+        range.selectNodeContents(textarea);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        textarea.focus();
+      } else {
+        textarea.value = sentence;
+        textarea.dispatchEvent(new Event("input"));
+        textarea.focus();
+      }
+      sendUsageData(sentence, context);
+    };
+    suggestionsBox.appendChild(suggestion);
+  });
+}
+
+function getContextSpecificSentences(keywords, context, firstPerson = false) {
+  const lowerKeywords = keywords.toLowerCase();
+  const parts = keywords.trim().split(/\s+/).filter(word => word);
+  let subject = parts.join(" ");
+  const baseAction = firstPerson ? "I want to" : ""; // Prefix for first-person
+  const sentences = [];
+  switch (context) {
+    case "Find":
+      sentences.push(`${baseAction} find ${subject} nearby`);
+      sentences.push(`${baseAction} find ${subject} online`);
+      sentences.push(`${baseAction} find ${subject} in stores`);
+      break;
+    case "Buy":
+      sentences.push(`${baseAction} buy ${subject} online`);
+      sentences.push(`${baseAction} buy ${subject} in a store`);
+      sentences.push(`${baseAction} buy ${subject} at a discount`);
+      break;
+    case "Repair":
+      sentences.push(`${baseAction} repair ${subject} at a local shop`);
+      sentences.push(`${baseAction} repair ${subject} with online service`);
+      sentences.push(`${baseAction} repair ${subject} under warranty`);
+      break;
+    case "Safety Check":
+      sentences.push(`${baseAction} check the safety of ${subject} for kids`);
+      sentences.push(`${baseAction} check the safety of ${subject} for adults`);
+      sentences.push(`${baseAction} check the safety of ${subject} for travel`);
+      break;
+    case "Locate":
+      sentences.push(`${baseAction} locate ${subject} in this city`);
+      sentences.push(`${baseAction} locate ${subject} at a mall`);
+      sentences.push(`${baseAction} locate ${subject} at an online retailer`);
+      break;
+    case "Explain":
+      sentences.push(`${baseAction} explain ${subject} in simple terms`);
+      sentences.push(`${baseAction} explain ${subject} with examples`);
+      sentences.push(`${baseAction} explain ${subject} step by step`);
+      break;
+    case "Build":
+      sentences.push(`${baseAction} build ${subject} with basic tools`);
+      sentences.push(`${baseAction} build ${subject} from scratch`);
+      sentences.push(`${baseAction} build ${subject} with advanced parts`);
+      break;
+    case "Design":
+      sentences.push(`${baseAction} design ${subject} for users`);
+      sentences.push(`${baseAction} design ${subject} for style`);
+      sentences.push(`${baseAction} design ${subject} for functionality`);
+      break;
+    case "Summarize":
+      sentences.push(`${baseAction} summarize ${subject} with key points`);
+      sentences.push(`${baseAction} summarize ${subject} in brief`);
+      sentences.push(`${baseAction} summarize ${subject} with highlights`);
+      break;
+    case "Write":
+      sentences.push(`${baseAction} write about ${subject} with clarity`);
+      sentences.push(`${baseAction} describe ${subject} features`);
+      sentences.push(`${baseAction} review ${subject} performance`);
+      break;
+    default:
+      sentences.push(`${baseAction} write about ${subject} with clarity`);
+      sentences.push(`${baseAction} describe ${subject} features`);
+      sentences.push(`${baseAction} review ${subject} performance`);
+  }
+  return sentences;
 }
 
 function debounce(func, delay) {
@@ -161,7 +282,7 @@ function debounce(func, delay) {
 
 function initialize() {
   console.log("🔍 Searching for input element on", window.location.href);
-  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"]');
+  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"], input[name="q"]');
   console.log("🔎 Initial element check:", textarea);
   if (!textarea || !textarea.offsetParent) {
     console.log("⏳ No visible input found, observing DOM...");
@@ -186,7 +307,7 @@ function setupPromptPilot(textarea) {
   const { box, toggle } = createSuggestionBox();
   let isBoxVisible = false;
 
-  const handleInput = () => {
+  const handleInput = debounce(() => {
     const userPrompt = textarea.value || textarea.textContent || "";
     console.log("⌨️ User input changed:", userPrompt);
     updateSuggestions(userPrompt, box, toggle, textarea);
@@ -194,24 +315,22 @@ function setupPromptPilot(textarea) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
     }
-  };
+  }, 300);
 
-  const setupToggle = () => {
-    if (!toggle.onclick) {
-      toggle.onclick = () => {
-        isBoxVisible = !isBoxVisible;
-        box.style.display = isBoxVisible ? "block" : "none";
-        box.style.opacity = isBoxVisible ? "1" : "0";
-        toggle.style.display = isBoxVisible ? "none" : "block";
-        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
-      };
-    }
-    if (!document.getElementById("promptpilot-toggle")) {
-      document.body.appendChild(toggle);
-      toggle.style.display = "block";
-    }
-  };
-
+const setupToggle = () => {
+  if (!toggle.onclick) {
+    toggle.onclick = () => {
+      isBoxVisible = !isBoxVisible;
+      box.style.display = isBoxVisible ? "block" : "none";
+      box.style.opacity = isBoxVisible ? "1" : "0";
+      console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
+    };
+  }
+  if (!document.getElementById("promptpilot-toggle")) {
+    document.body.appendChild(toggle);
+    toggle.style.display = "block";
+  }
+};
   setupToggle();
   textarea.addEventListener("input", handleInput);
   textarea.addEventListener("keyup", handleInput);
