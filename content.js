@@ -282,7 +282,7 @@ function debounce(func, delay) {
 
 function initialize() {
   console.log("🔍 Searching for input element on", window.location.href);
-  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"], input[name="q"]');
+  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"], [role="combobox"], .prompt-input, .chat-input');
   console.log("🔎 Initial element check:", textarea);
   if (!textarea || !textarea.offsetParent) {
     console.log("⏳ No visible input found, observing DOM...");

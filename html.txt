@@ -1,0 +1,6 @@
+<html>
+<body>
+<h1>Privacy Policy for PromptPilot</h1>
+<p>We collect anonymized usage data (like how long your prompts are and which suggestions you click) to make the extension better. No full prompts or personal info is stored. Data goes to our secure server and isn't shared or sold. We use OpenAI via a safe proxy for suggestions—check OpenAI's policy too. Questions? Email [your email]. Last updated: July 25, 2025.</p>
+</body>
+</html>
