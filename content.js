@@ -56,8 +56,7 @@ function createSuggestionBox() {
     maxHeight: "200px",
     overflowY: "auto",
     color: "#333",
-    userSelect: "none",
-    position: "relative" // For hint positioning
+    userSelect: "none"
   });
 
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -262,7 +261,7 @@ function renderSuggestions(intents, box, textarea, inputText) {
     button.innerHTML = `${context} <span style="font-size: 10px; margin-left: 5px;">🔄</span>`;
     Object.assign(button.style, {
       padding: "8px",
-      marginBottom = "4px",
+      marginBottom: "4px",
       backgroundColor: "rgba(240, 240, 240, 0.8)",
       borderRadius: "6px",
       cursor: "pointer",
@@ -304,7 +303,6 @@ function renderSuggestions(intents, box, textarea, inputText) {
             }
             box.insertBefore(suggestionsBox, button.nextSibling);
             suggestionsBox.style.display = "block";
-            }
           }
         );
       }
@@ -402,9 +400,9 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
       sentences.push(`${baseAction} review ${subject} performance`);
       break;
     default:
-        sentences.push(`${baseAction} write about ${subject} with clarity`);
-        sentences.push(`${baseAction} describe ${subject} features`);
-        sentences.push(`${baseAction} review ${subject} performance`);
+      sentences.push(`${baseAction} write about ${subject} with clarity`);
+      sentences.push(`${baseAction} describe ${subject} features`);
+      sentences.push(`${baseAction} review ${subject} performance`);
   }
   return sentences;
 }
