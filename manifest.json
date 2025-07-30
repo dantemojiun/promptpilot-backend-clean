@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "PromptPilot",
+  "name": "MetaPrompt",
   "version": "1.0",
   "description": "AI-powered prompt suggestions for ChatGPT and Grok",
   "permissions": [
@@ -8,7 +8,8 @@
     "storage",
     "scripting",
     "activeTab",
-    "omnibox"
+    "omnibox",
+    "tabs"
   ],
   "host_permissions": [
     "https://chatgpt.com/*",
@@ -27,16 +28,14 @@
   "background": {
     "service_worker": "background.js"
   },
+  "action": {
+    "default_popup": "popup.html"
+  },
   "web_accessible_resources": [
     {
       "resources": ["popup.html", "popup.js", "style.css"],
       "matches": ["<all_urls>"]
     }
   ],
-  "omnibox": { "keyword": "pp" },
-  "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+  "omnibox": { "keyword": "pp" }
 }
