@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "PromptPilot",
+  "version": "1.0",
+  "description": "AI-powered prompt suggestions for ChatGPT and Grok",
+  "permissions": [
+    "background",
+    "storage",
+    "scripting",
+    "activeTab",
+    "omnibox"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://grok.com/*",
+    "https://*.google.com/*",
+    "https://api.openai.com/*",
+    "https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://grok.com/*", "https://*.google.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["popup.html", "popup.js", "style.css"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "omnibox": { "keyword": "pp" }
+}
