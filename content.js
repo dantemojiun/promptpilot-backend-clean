@@ -24,29 +24,24 @@ function createSuggestionBox() {
   // Toggle button
   const toggle = document.createElement("div");
   toggle.id = "promptpilot-toggle";
-  toggle.textContent = "🧠";
+  toggle.textContent = "✨";
   toggle.style.position = "fixed";
-  toggle.style.bottom = "20px"; // Original bottom-right position
+  toggle.style.bottom = "20px";
   toggle.style.right = "20px";
   toggle.style.padding = "8px";
   toggle.style.backgroundColor = "rgba(0, 0, 0, 0.7)";
   toggle.style.color = "white";
   toggle.style.borderRadius = "50%";
-  toggle.style.cursor = "move";
+  toggle.style.cursor = "pointer";
   toggle.style.zIndex = "99998";
-<<<<<<< HEAD
   toggle.style.display = "none";
   toggle.style.userSelect = "none";
-=======
-  toggle.style.display = "block";
-  toggle.style.userSelect = "none"; // Prevent text selection
->>>>>>> c0dc0d9 (First commit)
   document.body.appendChild(toggle);
 
   // Initial styling for suggestion box
   Object.assign(box.style, {
     position: "fixed",
-    bottom: "80px", // Original bottom-right position
+    bottom: "80px",
     right: "20px",
     backgroundColor: "rgba(255, 255, 255, 0.9)",
     border: "1px solid #ccc",
@@ -61,12 +56,8 @@ function createSuggestionBox() {
     maxHeight: "200px",
     overflowY: "auto",
     color: "#333",
-<<<<<<< HEAD
     userSelect: "none",
     position: "relative"
-=======
-    userSelect: "none" // Prevent text selection during drag
->>>>>>> c0dc0d9 (First commit)
   });
 
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -96,42 +87,23 @@ function createSuggestionBox() {
   document.body.appendChild(container);
   console.log("✅ Suggestion box and toggle created");
 
-<<<<<<< HEAD
-=======
-  // Make box and toggle move together
->>>>>>> c0dc0d9 (First commit)
   makeDraggable(box, toggle, dragHandle);
 
   return { box, toggle };
 }
 
-<<<<<<< HEAD
 function makeDraggable(box, toggle, dragHandle) {
   let isDragging = false;
   let currentRight = 20;
   let currentBottom = 80;
   let initialX, initialY;
 
-=======
-// Function to make box and toggle draggable together, using bottom-right positioning
-function makeDraggable(box, toggle, dragHandle) {
-  let isDragging = false;
-  let currentRight = 20; // Initial right position
-  let currentBottom = 80; // Initial bottom position for box
-  let initialX, initialY;
-
-  // Allow dragging from either the handle or toggle
->>>>>>> c0dc0d9 (First commit)
   [dragHandle, toggle].forEach((el) => {
     el.addEventListener("mousedown", (e) => {
       initialX = e.clientX - (window.innerWidth - currentRight);
       initialY = e.clientY - (window.innerHeight - currentBottom);
       isDragging = true;
-<<<<<<< HEAD
       e.preventDefault();
-=======
-      e.preventDefault(); // Prevent text selection
->>>>>>> c0dc0d9 (First commit)
       console.log("🚀 Started dragging, initial position:", { right: currentRight, bottom: currentBottom });
     });
   });
@@ -142,26 +114,14 @@ function makeDraggable(box, toggle, dragHandle) {
       currentRight = window.innerWidth - (e.clientX - initialX);
       currentBottom = window.innerHeight - (e.clientY - initialY);
 
-<<<<<<< HEAD
       currentRight = Math.max(10, Math.min(currentRight, window.innerWidth - 10));
       currentBottom = Math.max(10, Math.min(currentBottom, window.innerHeight - 10));
 
-=======
-      // Clamp positions to keep elements on-screen (10px margin from edges)
-      currentRight = Math.max(10, Math.min(currentRight, window.innerWidth - 10));
-      currentBottom = Math.max(10, Math.min(currentBottom, window.innerHeight - 10));
-
-      // Update box position
->>>>>>> c0dc0d9 (First commit)
       box.style.right = `${currentRight}px`;
       box.style.bottom = `${currentBottom}px`;
       box.style.left = "auto";
       box.style.top = "auto";
 
-<<<<<<< HEAD
-=======
-      // Update toggle position (60px below box, aligned right)
->>>>>>> c0dc0d9 (First commit)
       toggle.style.right = `${currentRight}px`;
       toggle.style.bottom = `${currentBottom - 60}px`;
       toggle.style.left = "auto";
@@ -194,10 +154,6 @@ function sendUsageData(input, suggestion) {
 
 function getChatHistory() {
   const history = [];
-<<<<<<< HEAD
-=======
-  // Broad selectors for chat messages on ChatGPT and Grok
->>>>>>> c0dc0d9 (First commit)
   const messageElements = document.querySelectorAll('[data-testid^="conversation-turn"], [role="message"], .message, .user-message, .assistant-message, .text-message, .chat-message, .prompt-response, .response-text');
   messageElements.forEach((el) => {
     let role = 'Unknown';
@@ -211,7 +167,6 @@ function getChatHistory() {
       history.push(`${role}: ${text}`);
     }
   });
-<<<<<<< HEAD
   console.log("🔍 Extracted chat history:", history);
   return history.join('\n\n');
 }
@@ -268,10 +223,6 @@ function showInlineSuggestions(inputText, textarea) {
   textarea.parentNode.appendChild(suggestionDiv);
   setTimeout(() => suggestionDiv.style.opacity = "0.5", 10);
   setTimeout(() => suggestionDiv.remove(), 2000);
-=======
-  console.log("🔍 Extracted chat history:", history); // Debug log for history
-  return history.join('\n\n'); // Format as a string with line breaks
->>>>>>> c0dc0d9 (First commit)
 }
 
 function updateSuggestions(inputText, box, toggle, textarea) {
@@ -306,13 +257,9 @@ function updateSuggestions(inputText, box, toggle, textarea) {
 }
 
 function renderSuggestions(intents, box, textarea, inputText) {
-  box.innerHTML = "<strong>🧠 Suggested Intents:</strong><br><br>";
+  box.innerHTML = "<strong>✨ Suggested Intents:</strong><br><br>";
   intents.forEach((context) => {
     const button = document.createElement("div");
-<<<<<<< HEAD
-=======
-    // Add text and refresh icon
->>>>>>> c0dc0d9 (First commit)
     button.innerHTML = `${context} <span style="font-size: 10px; margin-left: 5px;">🔄</span>`;
     Object.assign(button.style, {
       padding: "8px",
@@ -463,39 +410,28 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
 }
 
 function initialize() {
-  console.log("🔍 Searching for input element on", window.location.href);
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
-=======
-  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], [contenteditable="true"], [role="textbox"], [role="combobox"], .prompt-input, .chat-input');
->>>>>>> 7dc12b3 (modified prompt)
-  console.log("🔎 Initial element check:", textarea);
-  if (!textarea || !textarea.offsetParent) {
-    console.log("⏳ No visible input found, observing DOM...");
-    const observer = new MutationObserver((mutations) => {
-      const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
-      console.log("🔎 Observed element:", textarea);
-=======
-  const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], textarea[aria-label="Ask Grok anything"], [contenteditable="true"][id="prompt-textarea"], [role="textbox"]');
-  console.log("🔎 Initial element check:", textarea ? textarea.outerHTML : 'No input found yet');
-  if (!textarea || !textarea.offsetParent) {
-    console.log("⏳ No visible input found, observing DOM...");
-    const observer = new MutationObserver((mutations) => {
-      const textarea = document.querySelector('textarea[data-testid="prompt-textarea"], textarea[aria-label="Ask Grok anything"], [contenteditable="true"][id="prompt-textarea"], [role="textbox"]');
-      console.log("🔎 Observed element:", textarea ? textarea.outerHTML : 'Still null');
->>>>>>> c0dc0d9 (First commit)
-      if (textarea && textarea.offsetParent) {
-        console.log("✅ Found visible input:", textarea.outerHTML);
-        observer.disconnect();
-        setupPromptPilot(textarea);
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-    return;
-  }
-  console.log("✅ Found initial input:", textarea.outerHTML);
-  setupPromptPilot(textarea);
+  // Delay initialization to avoid hydration issues
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log("🔍 Searching for input element on", window.location.href);
+    const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
+    console.log("🔎 Initial element check:", textarea);
+    if (!textarea || !textarea.offsetParent) {
+      console.log("⏳ No visible input found, observing DOM...");
+      const observer = new MutationObserver((mutations) => {
+        const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
+        console.log("🔎 Observed element:", textarea);
+        if (textarea && textarea.offsetParent) {
+          console.log("✅ Found visible input:", textarea.outerHTML);
+          observer.disconnect();
+          setupPromptPilot(textarea);
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+      return;
+    }
+    console.log("✅ Found initial input:", textarea.outerHTML);
+    setupPromptPilot(textarea);
+  }, { once: true });
 }
 
 function setupPromptPilot(textarea) {
@@ -521,11 +457,7 @@ function setupPromptPilot(textarea) {
         isBoxVisible = !isBoxVisible;
         box.style.display = isBoxVisible ? "block" : "none";
         box.style.opacity = isBoxVisible ? "1" : "0";
-<<<<<<< HEAD
         toggle.style.display = isBoxVisible ? "none" : "block";
-=======
-        toggle.style.display = "block"; // Ensure toggle stays visible
->>>>>>> c0dc0d9 (First commit)
         console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
       };
     }
@@ -547,11 +479,7 @@ function setupPromptPilot(textarea) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
       console.log("🔄 Reattached toggle due to DOM mutation");
-<<<<<<< HEAD
       setupToggle();
-=======
-      setupToggle(); // Reapply click handler if reattached
->>>>>>> c0dc0d9 (First commit)
     }
   });
   toggleObserver.observe(document.body, { childList: true, subtree: true });
