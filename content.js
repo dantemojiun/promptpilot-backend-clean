@@ -151,7 +151,7 @@ function sendUsageData(input, suggestion) {
     timestamp: new Date().toISOString(),
     userAction: "suggestion_click"
   };
-  fetch('https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/usage', {
+  fetch('https://promptpilot-app.herokuapp.com/usage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(usageData)

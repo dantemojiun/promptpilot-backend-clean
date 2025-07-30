@@ -16,7 +16,7 @@
     "https://grok.com/*",
     "https://*.google.com/*",
     "https://api.openai.com/*",
-    "https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/*"
+    "https://promptpilot-app.herokuapp.com/*"
   ],
   "content_scripts": [
     {
@@ -37,5 +37,5 @@
       "matches": ["<all_urls>"]
     }
   ],
-  "omnibox": { "keyword": "pp" }
+  "omnibox": { "keyword": "mp" }
 }

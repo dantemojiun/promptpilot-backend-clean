@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "metaprompt-app",
   "version": "1.0.0",
   "main": "server.js",
@@ -11,3 +12,22 @@
     "cors": "^2.8.5"
   }
 }
+=======
+  "name": "promptpilot-extension",
+  "version": "1.0.0",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  }
+}
+>>>>>>> 7dc12b3c142b18424d58eef4ea946acf6b4e02ca
