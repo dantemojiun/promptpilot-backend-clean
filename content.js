@@ -36,6 +36,7 @@ function createSuggestionBox() {
   toggle.style.zIndex = "99998";
   toggle.style.display = "none";
   toggle.style.userSelect = "none";
+  document.body.appendChild(toggle);
 
   // Initial styling for suggestion box
   Object.assign(box.style, {
@@ -56,7 +57,7 @@ function createSuggestionBox() {
     overflowY: "auto",
     color: "#333",
     userSelect: "none",
-    position: "relative"
+    position: "relative" // For hint positioning
   });
 
   const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -83,12 +84,7 @@ function createSuggestionBox() {
   box.appendChild(closeBtn);
 
   shadow.appendChild(box);
-  // Delay appending to body to avoid hydration issues
-  setTimeout(() => {
-    document.body.appendChild(container);
-    document.body.appendChild(toggle);
-    console.log("✅ Suggestion box and toggle appended to body");
-  }, 2000); // Increased delay to 2 seconds
+  document.body.appendChild(container);
 
   makeDraggable(box, toggle, dragHandle);
 
@@ -266,7 +262,7 @@ function renderSuggestions(intents, box, textarea, inputText) {
     button.innerHTML = `${context} <span style="font-size: 10px; margin-left: 5px;">🔄</span>`;
     Object.assign(button.style, {
       padding: "8px",
-      marginBottom: "4px",
+      marginBottom = "4px",
       backgroundColor: "rgba(240, 240, 240, 0.8)",
       borderRadius: "6px",
       cursor: "pointer",
@@ -308,6 +304,7 @@ function renderSuggestions(intents, box, textarea, inputText) {
             }
             box.insertBefore(suggestionsBox, button.nextSibling);
             suggestionsBox.style.display = "block";
+            }
           }
         );
       }
@@ -405,9 +402,9 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
       sentences.push(`${baseAction} review ${subject} performance`);
       break;
     default:
-      sentences.push(`${baseAction} write about ${subject} with clarity`);
-      sentences.push(`${baseAction} describe ${subject} features`);
-      sentences.push(`${baseAction} review ${subject} performance`);
+        sentences.push(`${baseAction} write about ${subject} with clarity`);
+        sentences.push(`${baseAction} describe ${subject} features`);
+        sentences.push(`${baseAction} review ${subject} performance`);
   }
   return sentences;
 }
@@ -434,7 +431,58 @@ function initialize() {
     }
     console.log("✅ Found initial input:", textarea.outerHTML);
     setupPromptPilot(textarea);
-  }, { once: true });
+  });
+}
+
+function setupPromptPilot(textarea) {
+  console.log("✅ Prompt input found:", textarea.outerHTML, "Visible:", textarea.offsetParent !== null);
+  const { box, toggle } = createSuggestionBox();
+  let isBoxVisible = false;
+
+  const handleInput = debounce(() => {
+    const userPrompt = textarea.value || textarea.textContent || "";
+    console.log("⌨️ User input changed:", userPrompt);
+    updateSuggestions(userPrompt, box, toggle, textarea);
+    if (userPrompt.trim() && !document.getElementById("promptpilot-toggle")) {
+      document.body.appendChild(toggle);
+      toggle.style.display = "block";
+      console.log("🔄 Reattached toggle due to missing DOM element");
+    }
+    if (userPrompt) showInlineSuggestions(userPrompt, textarea);
+  }, 300);
+
+  const setupToggle = () => {
+    if (!toggle.onclick) {
+      toggle.onclick = () => {
+        isBoxVisible = !isBoxVisible;
+        box.style.display = isBoxVisible ? "block" : "none";
+        box.style.opacity = isBoxVisible ? "1" : "0";
+        toggle.style.display = isBoxVisible ? "none" : "block";
+        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
+      };
+    }
+    if (!document.getElementById("promptpilot-toggle")) {
+      document.body.appendChild(toggle);
+      toggle.style.display = "block";
+      console.log("🔄 Reattached toggle in setupToggle");
+    }
+  };
+  setupToggle();
+
+  textarea.addEventListener("input", handleInput);
+  textarea.addEventListener("keyup", handleInput);
+  textarea.addEventListener("change", handleInput);
+  textarea.addEventListener("paste", handleInput);
+
+  const toggleObserver = new MutationObserver((mutations) => {
+    if (!document.getElementById("promptpilot-toggle") && !isBoxVisible) {
+      document.body.appendChild(toggle);
+      toggle.style.display = "block";
+      console.log("🔄 Reattached toggle due to DOM mutation");
+      setupToggle();
+    }
+  });
+  toggleObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 initialize();
