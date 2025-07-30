@@ -221,9 +221,13 @@ function showInlineSuggestions(inputText, textarea) {
     span.textContent = word;
     span.style.cssText = "margin-right: 5px; cursor: pointer; background: rgba(0,0,0,0.1); padding: 2px 5px;";
     span.onclick = () => {
-      textarea.value += " " + word;
+      if (textarea.isContentEditable) {
+        textarea.innerText += " " + word;
+      } else {
+        textarea.value += " " + word;
+      }
       suggestionDiv.style.opacity = "0";
-      sendUsageData(textarea.value, word);
+      sendUsageData(textarea.value || textarea.innerText, word);
     };
     suggestionDiv.appendChild(span);
   });
@@ -421,51 +425,6 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
   return sentences;
 }
 
-function initialize() {
-  console.log("🔍 Initializing PromptPilot on", window.location.href);
-  const { box, toggle } = createSuggestionBox();
-  let textarea = null;
-  let lastInput = null;
-  let inputInitialized = false;
-
-  window.addEventListener('load', () => {
-    console.log("🔍 Searching for input element...");
-    textarea = document.querySelector('[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([style*="visibility: hidden"]):not([style*="height: 0px"]), [contenteditable="true"]:not([aria-hidden="true"]), [role="textbox"]');
-    console.log("🔎 Initial element check:", textarea);
-    if (textarea && isElementVisible(textarea)) {
-      console.log("✅ Found visible input:", textarea.outerHTML);
-      inputInitialized = true;
-      setupPromptPilot(textarea, box, toggle);
-    } else {
-      console.log("⏳ No visible input found, observing DOM...");
-      const observer = new MutationObserver((mutations) => {
-        if (inputInitialized) return;
-        textarea = document.querySelector('[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([style*="visibility: hidden"]):not([style*="height: 0px"]), [contenteditable="true"]:not([aria-hidden="true"]), [role="textbox"]');
-        console.log("🔎 Observed element:", textarea);
-        if (textarea && isElementVisible(textarea)) {
-          console.log("✅ Found visible input:", textarea.outerHTML);
-          inputInitialized = true;
-          observer.disconnect();
-          setupPromptPilot(textarea, box, toggle);
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-
-      setTimeout(() => {
-        if (!inputInitialized) {
-          console.log("⚠️ No input found after timeout, initializing with dummy textarea");
-          textarea = document.createElement("div");
-          setupPromptPilot(textarea, box, toggle);
-          updateSuggestions("test input", box, toggle, textarea);
-        }
-      }, 5000);
-    }
-  });
-
-  // Test suggestion box immediately
-  updateSuggestions("test input", box, toggle, textarea || document.createElement("div"));
-}
-
 function isElementVisible(element) {
   const style = window.getComputedStyle(element);
   return (
@@ -473,9 +432,66 @@ function isElementVisible(element) {
     style.visibility !== "hidden" &&
     style.display !== "none" &&
     parseFloat(style.height) > 0 &&
-    !element.hasAttribute("aria-hidden") ||
-    element.getAttribute("aria-hidden") !== "true"
+    element.getAttribute("aria-hidden") !== "true" &&
+    element.getAttribute("tabindex") !== "-1"
   );
+}
+
+function initialize() {
+  console.log("🔍 Initializing PromptPilot on", window.location.href);
+  const { box, toggle } = createSuggestionBox();
+  let textarea = null;
+  let inputInitialized = false;
+
+  const tryInitializeInput = () => {
+    console.log("🔍 Searching for input element...");
+    textarea = document.querySelector(
+      '[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([tabindex="-1"]):not([style*="visibility: hidden"]):not([style*="height: 0px"]):not([aria-label*="Grammarly"]), [contenteditable="true"]:not([aria-hidden="true"]):not([tabindex="-1"]), [role="textbox"]'
+    );
+    console.log("🔎 Initial element check:", textarea);
+    if (textarea && isElementVisible(textarea)) {
+      console.log("✅ Found visible input:", textarea.outerHTML);
+      inputInitialized = true;
+      setupPromptPilot(textarea, box, toggle);
+      return true;
+    }
+    return false;
+  };
+
+  // Try initial detection after page load
+  window.addEventListener('load', () => {
+    if (tryInitializeInput()) return;
+
+    console.log("⏳ No visible input found, observing DOM...");
+    const observer = new MutationObserver((mutations) => {
+      if (inputInitialized) return;
+      if (tryInitializeInput()) {
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+    // Fallback: Initialize after timeout if no input found
+    setTimeout(() => {
+      if (!inputInitialized) {
+        console.log("⚠️ No input found after timeout, initializing with dummy textarea");
+        textarea = document.createElement("div");
+        inputInitialized = true;
+        setupPromptPilot(textarea, box, toggle);
+        // Comment out test input to avoid showing "test input" intents
+        // updateSuggestions("test input", box, toggle, textarea);
+      }
+    }, 5000);
+  });
+
+  // Document-level event listener for input events
+  document.addEventListener("input", (e) => {
+    if (e.target.matches('[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([tabindex="-1"]), [contenteditable="true"]:not([aria-hidden="true"]), [role="textbox"]') && isElementVisible(e.target)) {
+      console.log("🔥 Document input event:", e.target.value || e.target.textContent);
+      textarea = e.target;
+      setupPromptPilot(textarea, box, toggle);
+    }
+  }, true);
 }
 
 function setupPromptPilot(textarea, box, toggle) {
@@ -544,7 +560,7 @@ function setupPromptPilot(textarea, box, toggle) {
       }
     });
 
-    const container = textarea.closest('div') || textarea.parentNode;
+    const container = textarea.closest('form, div') || textarea.parentNode;
     container.addEventListener("input", (e) => {
       if ((e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) && isElementVisible(e.target)) {
         const userPrompt = e.target.value || e.target.textContent || "";
