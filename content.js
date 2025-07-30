@@ -33,10 +33,11 @@ function createSuggestionBox() {
   toggle.style.color = "white";
   toggle.style.borderRadius = "50%";
   toggle.style.cursor = "pointer";
-  toggle.style.zIndex = "99998";
-  toggle.style.display = "none";
+  toggle.style.zIndex = "1000000";
+  toggle.style.display = "block";
   toggle.style.userSelect = "none";
   document.body.appendChild(toggle);
+  console.log("✅ Toggle appended to body:", document.getElementById("promptpilot-toggle"));
 
   // Initial styling for suggestion box
   Object.assign(box.style, {
@@ -48,7 +49,7 @@ function createSuggestionBox() {
     padding: "12px",
     borderRadius: "8px",
     boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-    zIndex: "99999",
+    zIndex: "1000001",
     fontFamily: "Arial, sans-serif",
     fontSize: "14px",
     maxWidth: "300px",
@@ -84,6 +85,7 @@ function createSuggestionBox() {
 
   shadow.appendChild(box);
   document.body.appendChild(container);
+  console.log("✅ Suggestion box container appended:", document.getElementById("promptpilot-box-container"));
 
   makeDraggable(box, toggle, dragHandle);
 
@@ -106,7 +108,10 @@ function makeDraggable(box, toggle, dragHandle) {
     });
   });
 
-  document.addEventListener("mousemove", (e) => {
+  document.removeEventListener("mousemove", handleMouseMove);
+  document.removeEventListener("mouseup", handleMouseUp);
+
+  function handleMouseMove(e) {
     if (isDragging) {
       e.preventDefault();
       currentRight = window.innerWidth - (e.clientX - initialX);
@@ -127,12 +132,15 @@ function makeDraggable(box, toggle, dragHandle) {
 
       console.log("🚀 Dragging, new position:", { boxRight: currentRight, boxBottom: currentBottom, toggleBottom: currentBottom - 60 });
     }
-  });
+  }
 
-  document.addEventListener("mouseup", () => {
+  function handleMouseUp() {
     isDragging = false;
     console.log("🚀 Stopped dragging, final position:", { boxRight: currentRight, boxBottom: currentBottom, toggleBottom: currentBottom - 60 });
-  });
+  }
+
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
 }
 
 function sendUsageData(input, suggestion) {
@@ -147,7 +155,7 @@ function sendUsageData(input, suggestion) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(usageData)
-  }).catch(err => console.error("❌ Usage data send failed:", err));
+  }).then(() => console.log("✅ Usage data sent")).catch(err => console.error("❌ Usage data send failed:", err));
 }
 
 function getChatHistory() {
@@ -204,9 +212,10 @@ function generateCompletions(inputText) {
 }
 
 function showInlineSuggestions(inputText, textarea) {
+  if (!textarea || !textarea.parentNode) return;
   const suggestions = predictNextWords(inputText);
   const suggestionDiv = document.createElement("div");
-  suggestionDiv.style.cssText = "position: absolute; top: -30px; left: 0; opacity: 0; transition: opacity 0.3s; font-size: 12px;";
+  suggestionDiv.style.cssText = "position: absolute; top: -30px; left: 0; opacity: 0; transition: opacity 0.3s; font-size: 12px; z-index: 1000002;";
   suggestions.forEach((word, index) => {
     const span = document.createElement("span");
     span.textContent = word;
@@ -228,18 +237,23 @@ function updateSuggestions(inputText, box, toggle, textarea) {
   if (!inputText.trim()) {
     box.style.display = "none";
     toggle.style.display = "block";
+    console.log("🛑 No input, hiding box");
     return;
   }
 
   box.style.display = "block";
   box.style.opacity = "0";
-  setTimeout(() => box.style.opacity = "1", 10);
+  setTimeout(() => {
+    box.style.opacity = "1";
+    console.log("🛠️ Showing suggestion box");
+  }, 10);
 
   chrome.runtime.sendMessage(
     { action: "generateIntents", keywords: inputText },
     (response) => {
-      if (chrome.runtime.lastError) {
-        console.error("❌ Error communicating with background script:", chrome.runtime.lastError);
+      console.log("📡 chrome.runtime.sendMessage response:", response, "Error:", chrome.runtime.lastError ? chrome.runtime.lastError.message : null);
+      if (chrome.runtime.lastError && !response) {
+        console.error("❌ Error communicating with background script:", chrome.runtime.lastError.message);
         renderSuggestions(["Find", "Buy", "Explain"], box, textarea, inputText);
         return;
       }
@@ -256,6 +270,7 @@ function updateSuggestions(inputText, box, toggle, textarea) {
 
 function renderSuggestions(intents, box, textarea, inputText) {
   box.innerHTML = "<strong>✨ Suggested Intents:</strong><br><br>";
+  console.log("🛠️ Rendering intents:", intents);
   intents.forEach((context) => {
     const button = document.createElement("div");
     button.innerHTML = `${context} <span style="font-size: 10px; margin-left: 5px;">🔄</span>`;
@@ -286,8 +301,9 @@ function renderSuggestions(intents, box, textarea, inputText) {
         chrome.runtime.sendMessage(
           { action: "generateSentences", keywords: inputText, intent: context, history: getChatHistory() },
           (response) => {
-            if (chrome.runtime.lastError) {
-              console.error("❌ Error generating sentences:", chrome.runtime.lastError);
+            console.log("📡 chrome.runtime.sendMessage for sentences response:", response, "Error:", chrome.runtime.lastError ? chrome.runtime.lastError.message : null);
+            if (chrome.runtime.lastError && !response) {
+              console.error("❌ Error generating sentences:", chrome.runtime.lastError.message);
               const fallback = getContextSpecificSentences(inputText, context, true);
               renderSentenceSuggestions(fallback, suggestionsBox, textarea, context);
             } else if (response.error) {
@@ -298,9 +314,6 @@ function renderSuggestions(intents, box, textarea, inputText) {
               console.log("📝 Received AI sentences:", response.sentences);
               renderSentenceSuggestions(response.sentences, suggestionsBox, textarea, context);
             }
-            if (box.contains(suggestionsBox)) {
-              box.removeChild(suggestionsBox);
-            }
             box.insertBefore(suggestionsBox, button.nextSibling);
             suggestionsBox.style.display = "block";
           }
@@ -309,12 +322,13 @@ function renderSuggestions(intents, box, textarea, inputText) {
     });
 
     box.appendChild(button);
-    if (suggestionsBox.children.length > 0 && !box.contains(suggestionsBox)) box.insertBefore(suggestionsBox, button.nextSibling);
   });
+  console.log("🛠️ Suggestion box HTML:", box.innerHTML);
 }
 
 function renderSentenceSuggestions(sentences, suggestionsBox, textarea, context) {
   suggestionsBox.innerHTML = "";
+  console.log("🛠️ Rendering sentences:", sentences);
   sentences.forEach((sentence, index) => {
     const suggestion = document.createElement("div");
     suggestion.textContent = `${index + 1}. ${sentence}`;
@@ -408,37 +422,74 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
 }
 
 function initialize() {
-  // Delay initialization to avoid hydration issues
+  console.log("🔍 Initializing PromptPilot on", window.location.href);
+  const { box, toggle } = createSuggestionBox();
+  let textarea = null;
+  let lastInput = null;
+  let inputInitialized = false;
+
   window.addEventListener('load', () => {
-    console.log("🔍 Searching for input element on", window.location.href);
-    const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
+    console.log("🔍 Searching for input element...");
+    textarea = document.querySelector('[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([style*="visibility: hidden"]):not([style*="height: 0px"]), [contenteditable="true"]:not([aria-hidden="true"]), [role="textbox"]');
     console.log("🔎 Initial element check:", textarea);
-    if (!textarea || !textarea.offsetParent) {
+    if (textarea && isElementVisible(textarea)) {
+      console.log("✅ Found visible input:", textarea.outerHTML);
+      inputInitialized = true;
+      setupPromptPilot(textarea, box, toggle);
+    } else {
       console.log("⏳ No visible input found, observing DOM...");
       const observer = new MutationObserver((mutations) => {
-        const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
+        if (inputInitialized) return;
+        textarea = document.querySelector('[data-testid="prompt-textarea"], [name="prompt-textarea"], textarea:not([aria-hidden="true"]):not([style*="visibility: hidden"]):not([style*="height: 0px"]), [contenteditable="true"]:not([aria-hidden="true"]), [role="textbox"]');
         console.log("🔎 Observed element:", textarea);
-        if (textarea && textarea.offsetParent) {
+        if (textarea && isElementVisible(textarea)) {
           console.log("✅ Found visible input:", textarea.outerHTML);
+          inputInitialized = true;
           observer.disconnect();
-          setupPromptPilot(textarea);
+          setupPromptPilot(textarea, box, toggle);
         }
       });
       observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-      return;
+
+      setTimeout(() => {
+        if (!inputInitialized) {
+          console.log("⚠️ No input found after timeout, initializing with dummy textarea");
+          textarea = document.createElement("div");
+          setupPromptPilot(textarea, box, toggle);
+          updateSuggestions("test input", box, toggle, textarea);
+        }
+      }, 5000);
     }
-    console.log("✅ Found initial input:", textarea.outerHTML);
-    setupPromptPilot(textarea);
   });
+
+  // Test suggestion box immediately
+  updateSuggestions("test input", box, toggle, textarea || document.createElement("div"));
 }
 
-function setupPromptPilot(textarea) {
-  console.log("✅ Prompt input found:", textarea.outerHTML, "Visible:", textarea.offsetParent !== null);
-  const { box, toggle } = createSuggestionBox();
+function isElementVisible(element) {
+  const style = window.getComputedStyle(element);
+  return (
+    element.offsetParent !== null &&
+    style.visibility !== "hidden" &&
+    style.display !== "none" &&
+    parseFloat(style.height) > 0 &&
+    !element.hasAttribute("aria-hidden") ||
+    element.getAttribute("aria-hidden") !== "true"
+  );
+}
+
+function setupPromptPilot(textarea, box, toggle) {
+  console.log("✅ Prompt input found:", textarea.outerHTML, "Visible:", isElementVisible(textarea));
   let isBoxVisible = false;
+  let lastInput = "";
 
   const handleInput = debounce(() => {
     const userPrompt = textarea.value || textarea.textContent || "";
+    if (userPrompt === lastInput) {
+      console.log("🛑 Input unchanged, skipping update");
+      return;
+    }
+    lastInput = userPrompt;
     console.log("⌨️ User input changed:", userPrompt);
     updateSuggestions(userPrompt, box, toggle, textarea);
     if (userPrompt.trim() && !document.getElementById("promptpilot-toggle")) {
@@ -447,7 +498,7 @@ function setupPromptPilot(textarea) {
       console.log("🔄 Reattached toggle due to missing DOM element");
     }
     if (userPrompt) showInlineSuggestions(userPrompt, textarea);
-  }, 300);
+  }, 500);
 
   const setupToggle = () => {
     if (!toggle.onclick) {
@@ -455,7 +506,7 @@ function setupPromptPilot(textarea) {
         isBoxVisible = !isBoxVisible;
         box.style.display = isBoxVisible ? "block" : "none";
         box.style.opacity = isBoxVisible ? "1" : "0";
-        toggle.style.display = isBoxVisible ? "none" : "block";
+        toggle.style.display = "block";
         console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
       };
     }
@@ -467,10 +518,42 @@ function setupPromptPilot(textarea) {
   };
   setupToggle();
 
-  textarea.addEventListener("input", handleInput);
-  textarea.addEventListener("keyup", handleInput);
-  textarea.addEventListener("change", handleInput);
-  textarea.addEventListener("paste", handleInput);
+  if (textarea && isElementVisible(textarea)) {
+    textarea.addEventListener("input", (e) => {
+      if (e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) {
+        console.log("🔥 Input event fired:", e.target.value || e.target.textContent);
+        handleInput();
+      }
+    });
+    textarea.addEventListener("keyup", (e) => {
+      if (e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) {
+        console.log("🔥 Keyup event fired:", e.target.value || e.target.textContent);
+        handleInput();
+      }
+    });
+    textarea.addEventListener("change", (e) => {
+      if (e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) {
+        console.log("🔥 Change event fired:", e.target.value || e.target.textContent);
+        handleInput();
+      }
+    });
+    textarea.addEventListener("paste", (e) => {
+      if (e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) {
+        console.log("🔥 Paste event fired:", e.clipboardData.getData('text'));
+        handleInput();
+      }
+    });
+
+    const container = textarea.closest('div') || textarea.parentNode;
+    container.addEventListener("input", (e) => {
+      if ((e.target.tagName.toLowerCase() === "textarea" || e.target.isContentEditable) && isElementVisible(e.target)) {
+        const userPrompt = e.target.value || e.target.textContent || "";
+        if (userPrompt === lastInput) return;
+        console.log("🔥 Container input event:", userPrompt);
+        handleInput();
+      }
+    }, true);
+  }
 
   const toggleObserver = new MutationObserver((mutations) => {
     if (!document.getElementById("promptpilot-toggle") && !isBoxVisible) {
