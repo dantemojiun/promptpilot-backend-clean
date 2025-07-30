@@ -411,7 +411,7 @@ function getContextSpecificSentences(keywords, context, firstPerson = false) {
 
 function initialize() {
   // Delay initialization to avoid hydration issues
-  document.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('load', () => {
     console.log("🔍 Searching for input element on", window.location.href);
     const textarea = document.querySelector('textarea, [contenteditable="true"], [role="textbox"], [data-testid*="prompt"]');
     console.log("🔎 Initial element check:", textarea);
@@ -431,7 +431,7 @@ function initialize() {
     }
     console.log("✅ Found initial input:", textarea.outerHTML);
     setupPromptPilot(textarea);
-  }, { once: true });
+  });
 }
 
 function setupPromptPilot(textarea) {
