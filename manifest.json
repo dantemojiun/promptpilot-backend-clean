@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "MetaPrompt",
+  "name": "PromptPilot",
   "version": "1.0",
   "description": "AI-powered prompt suggestions for ChatGPT and Grok",
   "permissions": [
@@ -14,13 +14,12 @@
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://grok.com/*",
-    "https://*.google.com/*",
-    "https://api.openai.com/*",
-    "https://promptpilot-app.herokuapp.com/*"
+    "https://www.google.com/*",
+    "https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://chatgpt.com/*", "https://grok.com/*", "https://*.google.com/*"],
+      "matches": ["https://chatgpt.com/*", "https://grok.com/*", "https://www.google.com/*"],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
@@ -34,8 +33,8 @@
   "web_accessible_resources": [
     {
       "resources": ["popup.html", "popup.js", "style.css"],
-      "matches": ["<all_urls>"]
+      "matches": ["https://chatgpt.com/*", "https://grok.com/*", "https://www.google.com/*"]
     }
   ],
-  "omnibox": { "keyword": "mp" }
+  "omnibox": { "keyword": "pp" }
 }
