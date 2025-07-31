@@ -1,12 +1,19 @@
-console.log("🚀 MetaPrompt content script loaded on", window.location.href);
-
+console.log("🚀 PromptPilot content script loaded on", window.location.href);
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0; // Make it a 32-bit integer
+  }
+  return hash.toString(16); // Turn into hex code
+}
 function createSuggestionBox() {
   console.log("🛠️ Creating suggestion box...");
   const container = document.createElement("div");
-  container.id = "metaprompt-box-container";
+  container.id = "promptpilot-box-container";
   const shadow = container.attachShadow({ mode: "open" });
   const box = document.createElement("div");
-  box.id = "metaprompt-box";
+  box.id = "promptpilot-box";
   box.style.display = "none";
   box.style.opacity = "0";
   box.style.transition = "opacity 0.3s ease";
@@ -23,7 +30,7 @@ function createSuggestionBox() {
 
   // Toggle button
   const toggle = document.createElement("div");
-  toggle.id = "metaprompt-toggle";
+  toggle.id = "promptpilot-toggle";
   toggle.textContent = "✨";
   toggle.style.position = "fixed";
   toggle.style.bottom = "20px";
@@ -37,7 +44,7 @@ function createSuggestionBox() {
   toggle.style.display = "block";
   toggle.style.userSelect = "none";
   document.body.appendChild(toggle);
-  console.log("✅ Toggle appended to body:", document.getElementById("metaprompt-toggle"));
+  console.log("✅ Toggle appended to body:", document.getElementById("promptpilot-toggle"));
 
   // Initial styling for suggestion box
   Object.assign(box.style, {
@@ -85,7 +92,7 @@ function createSuggestionBox() {
 
   shadow.appendChild(box);
   document.body.appendChild(container);
-  console.log("✅ Suggestion box container appended:", document.getElementById("metaprompt-box-container"));
+  console.log("✅ Suggestion box container appended:", document.getElementById("promptpilot-box-container"));
 
   makeDraggable(box, toggle, dragHandle);
 
@@ -147,11 +154,11 @@ function sendUsageData(input, suggestion) {
   const usageData = {
     sessionId: crypto.randomUUID(),
     inputLength: input.length,
-    suggestionUsed: suggestion.substring(0, 50),
+    suggestionUsed: simpleHash(suggestion.substring(0, 50)),
     timestamp: new Date().toISOString(),
     userAction: "suggestion_click"
   };
-  fetch('https://promptpilot-app.herokuapp.com/usage', {
+  fetch('https://promptpilot-app-4c3dd6ade6e0.herokuapp.com/usage', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(usageData)
@@ -438,7 +445,7 @@ function isElementVisible(element) {
 }
 
 function initialize() {
-  console.log("🔍 Initializing MetaPrompt on", window.location.href);
+  console.log("🔍 Initializing PromptPilot on", window.location.href);
   const { box, toggle } = createSuggestionBox();
   let textarea = null;
   let inputInitialized = false;
@@ -508,7 +515,7 @@ function setupPromptPilot(textarea, box, toggle) {
     lastInput = userPrompt;
     console.log("⌨️ User input changed:", userPrompt);
     updateSuggestions(userPrompt, box, toggle, textarea);
-    if (userPrompt.trim() && !document.getElementById("metaprompt-toggle")) {
+    if (userPrompt.trim() && !document.getElementById("promptpilot-toggle")) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
       console.log("🔄 Reattached toggle due to missing DOM element");
@@ -523,10 +530,10 @@ function setupPromptPilot(textarea, box, toggle) {
         box.style.display = isBoxVisible ? "block" : "none";
         box.style.opacity = isBoxVisible ? "1" : "0";
         toggle.style.display = "block";
-        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("metaprompt-toggle"));
+        console.log("Toggle clicked, box visible:", isBoxVisible, "Toggle display:", toggle.style.display, "Toggle in DOM:", !!document.getElementById("promptpilot-toggle"));
       };
     }
-    if (!document.getElementById("metaprompt-toggle")) {
+    if (!document.getElementById("promptpilot-toggle")) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
       console.log("🔄 Reattached toggle in setupToggle");
@@ -572,7 +579,7 @@ function setupPromptPilot(textarea, box, toggle) {
   }
 
   const toggleObserver = new MutationObserver((mutations) => {
-    if (!document.getElementById("metaprompt-toggle") && !isBoxVisible) {
+    if (!document.getElementById("promptpilot-toggle") && !isBoxVisible) {
       document.body.appendChild(toggle);
       toggle.style.display = "block";
       console.log("🔄 Reattached toggle due to DOM mutation");
